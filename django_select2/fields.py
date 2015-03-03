@@ -2,7 +2,24 @@
 Contains all the Django fields for Select2.
 """
 
+import copy
 import logging
+
+from django import forms
+from django.core import validators
+from django.core.exceptions import ValidationError
+from django.db.models import Q
+from django.forms.models import ModelChoiceIterator
+from django.utils.encoding import force_unicode, smart_unicode
+from django.utils.translation import ugettext_lazy as _
+
+from . import util
+from .util import extract_some_key_val
+from .views import NO_ERR_RESP
+from .widgets import (AutoHeavySelect2Mixin, AutoHeavySelect2MultipleWidget,
+                      AutoHeavySelect2TagWidget, AutoHeavySelect2Widget,
+                      HeavySelect2MultipleWidget, HeavySelect2TagWidget,
+                      HeavySelect2Widget, Select2MultipleWidget, Select2Widget)
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +58,7 @@ class AutoViewFieldMixin(object):
         if logger.isEnabledFor(logging.INFO):
             logger.info("Registering auto field: %s", name)
 
-        from . import util
-
         rf = util.register_field
-        if logger.isEnabledFor(logging.DEBUG):
-            rf = util.timer(rf)
 
         id_ = rf(name, self)
         self.field_id = id_
@@ -74,25 +87,8 @@ class AutoViewFieldMixin(object):
         raise NotImplementedError
 
 
-import copy
-
-from django import forms
-from django.core import validators
-from django.core.exceptions import ValidationError
-from django.forms.models import ModelChoiceIterator
-from django.db.models import Q
-from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import smart_unicode, force_unicode
-
-from .widgets import Select2Widget, Select2MultipleWidget,\
-    HeavySelect2Widget, HeavySelect2MultipleWidget, AutoHeavySelect2Widget, \
-    AutoHeavySelect2MultipleWidget, AutoHeavySelect2Mixin, AutoHeavySelect2TagWidget, \
-    HeavySelect2TagWidget
-from .views import NO_ERR_RESP
-from .util import extract_some_key_val
-
-
 ### Light general fields ###
+
 
 class Select2ChoiceField(forms.ChoiceField):
     """
@@ -469,10 +465,6 @@ class HeavySelect2FieldBaseMixin(object):
             be raised.
 
         """
-        from . import util
-        if logger.isEnabledFor(logging.DEBUG):
-            t1 = util.timer_start('HeavySelect2FieldBaseMixin.__init__')
-
         data_view = kwargs.pop('data_view', None)
         choices = kwargs.pop('choices', [])
 
@@ -497,16 +489,10 @@ class HeavySelect2FieldBaseMixin(object):
         # Widget should have been instantiated by now.
         self.widget.field = self
 
-        if logger.isEnabledFor(logging.DEBUG):
-            t2 = util.timer_start('HeavySelect2FieldBaseMixin.__init__:choices initialization')
-
         # ModelChoiceField will set self.choices to ModelChoiceIterator
         if choices and not (hasattr(self, 'choices') and isinstance(self.choices, forms.models.ModelChoiceIterator)):
             self.choices = choices
 
-        if logger.isEnabledFor(logging.DEBUG):
-            util.timer_end(t2)
-            util.timer_end(t1)
 
 class HeavyChoiceField(ChoiceMixin, forms.Field):
     """

@@ -3,16 +3,18 @@ Contains all the Django widgets for Select2.
 """
 import json
 import logging
-from itertools import chain
 import re
-import util
+from itertools import chain
 
 from django import forms
+from django.core.urlresolvers import reverse
 from django.core.validators import EMPTY_VALUES
+from django.utils.datastructures import MergeDict, MultiValueDict
 from django.utils.encoding import force_unicode
 from django.utils.safestring import mark_safe
-from django.core.urlresolvers import reverse
-from django.utils.datastructures import MultiValueDict, MergeDict
+from django.utils.six import text_type
+
+import util
 
 from . import __RENDER_SELECT2_STATICS as RENDER_SELECT2_STATICS
 
@@ -228,23 +230,17 @@ class Select2Mixin(object):
         :return: The rendered markup.
         :rtype: :py:obj:`unicode`
         """
-        if logger.isEnabledFor(logging.DEBUG):
-            t1 = util.timer_start('Select2Mixin.render')
 
         args = [name, value, attrs]
         if choices:
             args.append(choices)
 
-        s = unicode(super(Select2Mixin, self).render(*args))  # Thanks to @ouhouhsami Issue#1
+        s = text_type(super(Select2Mixin, self).render(*args))  # Thanks to @ouhouhsami Issue#1
         if RENDER_SELECT2_STATICS:
             s += self.media.render()
         final_attrs = self.build_attrs(attrs)
         id_ = final_attrs.get('id', None)
         s += self.render_js_code(id_, name, value, attrs, choices)
-
-        if logger.isEnabledFor(logging.DEBUG):
-            util.timer_end(t1)
-            logger.debug("Generated widget code:-\n%s", s)
 
         return mark_safe(s)
 
